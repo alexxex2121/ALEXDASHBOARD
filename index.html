@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#102a43;--blue:#1769aa;--pale:#eef6ff;--ink:#243b53;--muted:#627d98;--line:#d9e2ec;--white:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#f4f7fb;color:var(--ink)}
+button,input,textarea,select{font:inherit}button{cursor:pointer;border:0;border-radius:10px;padding:11px 15px;background:var(--blue);color:white;font-weight:650}
+button.secondary{background:#e8f1fb;color:var(--navy)}button.danger{background:#9b2c2c}
+input,textarea,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);margin:6px 0 12px}
+label{font-size:13px;font-weight:700;color:var(--muted)}h1,h2,h3,p{margin-top:0}.muted{color:var(--muted)}.small{font-size:12px}
+.top{background:var(--navy);color:white;padding:17px 22px;display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-size:20px;font-weight:800}.brand span{color:#8bd3ff}
+.wrap{max-width:1200px;margin:auto;padding:22px}.auth{max-width:440px;margin:45px auto;background:white;padding:28px;border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 35px #102a4310}
+.auth h1{font-size:26px}.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.card{background:white;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 5px 18px #102a4308}.stat{font-size:28px;font-weight:800;color:var(--navy)}.layout{display:grid;grid-template-columns:230px 1fr;gap:20px}.side{background:white;border:1px solid var(--line);border-radius:16px;padding:12px;height:max-content}.navbtn{display:block;text-align:left;width:100%;margin:4px 0;background:transparent;color:var(--ink)}.navbtn.active,.navbtn:hover{background:var(--pale);color:var(--blue)}.pagehead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.hidden{display:none!important}.notice{padding:12px;border-radius:10px;background:var(--pale);margin:12px 0;font-size:14px}.error{background:#fff0f0;color:#9b2c2c}.list{padding-left:20px}.tile{border:1px solid var(--line);border-radius:12px;padding:14px;margin:8px 0;background:#fbfdff}.tile strong{display:block;margin-bottom:4px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.actions{display:flex;gap:8px;flex-wrap:wrap}.footer{padding:22px;text-align:center;color:var(--muted);font-size:12px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.wrap{padding:14px}.top{padding:14px}.auth{margin:25px 14px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">✦ Teacher<span>Desk</span></div><div id="topUser" class="small">Personal workspace</div></header>
+<main id="authView" class="auth">
+  <h1>Welcome back</h1><p class="muted">Sign in to your personal teaching workspace.</p>
+  <div id="authMessage" class="notice hidden"></div>
+  <form id="loginForm"><label>Email address</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="you@example.com"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Your password"><button style="width:100%">Sign in</button></form>
+  <div class="actions"><button class="secondary" id="showSignup">Create account</button><button class="secondary" id="showForgot">Forgot password?</button></div>
+  <p class="small muted" style="margin-top:18px">Use your own account. Keep your password private.</p>
+</main>
+<main id="signupView" class="auth hidden">
+  <h1>Create your account</h1><p class="muted">Register your teacher dashboard account.</p><div id="signupMessage" class="notice hidden"></div>
+  <form id="signupForm"><label>Your name</label><input id="signupName" required placeholder="Teacher name"><label>Email address</label><input id="signupEmail" type="email" required placeholder="you@example.com"><label>Create password</label><input id="signupPassword" type="password" minlength="8" required placeholder="At least 8 characters"><button style="width:100%">Create account</button></form>
+  <button class="secondary" id="backLogin">Back to sign in</button>
+</main>
+<main id="forgotView" class="auth hidden">
+  <h1>Reset password</h1><p class="muted">We will email you a password-reset link.</p><div id="forgotMessage" class="notice hidden"></div>
+  <form id="forgotForm"><label>Email address</label><input id="forgotEmail" type="email" required placeholder="you@example.com"><button style="width:100%">Send reset link</button></form>
+  <button class="secondary" id="forgotBack">Back to sign in</button>
+</main>
+<main id="resetView" class="auth hidden">
+  <h1>Choose a new password</h1><div id="resetMessage" class="notice hidden"></div>
+  <form id="resetForm"><label>New password</label><input id="newPassword" type="password" minlength="8" required><label>Confirm password</label><input id="confirmPassword" type="password" minlength="8" required><button style="width:100%">Update password</button></form>
+</main>
+<main id="appView" class="wrap hidden">
+ <div class="pagehead"><div><p class="muted small">YOUR PERSONAL WORKSPACE</p><h1 style="margin-bottom:4px">Teacher Dashboard</h1><p class="muted">Plan, organize, and manage your classroom work.</p></div><button class="danger" id="logoutBtn">Log out</button></div>
+ <div class="layout">
+  <nav class="side" id="menu">
+   <button class="navbtn active" data-page="overview">⌂ Overview</button><button class="navbtn" data-page="quizzes">✎ Quizzes & Tests</button><button class="navbtn" data-page="students">♙ Student Lists</button><button class="navbtn" data-page="timetable">▦ Timetable</button><button class="navbtn" data-page="resources">▤ Resources</button><button class="navbtn" data-page="profile">⚙ Profile & Menus</button>
+  </nav>
+  <section id="content"></section>
+ </div>
+</main>
+<div class="footer">TeacherDesk • Personal workspace prototype</div>
+<script>
+/* SETUP: replace both placeholders with your Supabase Project URL and anon/publishable key.
+   Never put a service_role/secret key in this browser file. */
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_OR_PUBLISHABLE_KEY_HERE";
+const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PASTE_") && !SUPABASE_ANON_KEY.includes("PASTE_");
+const sb = configured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const $ = id => document.getElementById(id);
+const views = ["authView","signupView","forgotView","resetView","appView"];
+function show(id){views.forEach(v=>$(v).classList.toggle("hidden",v!==id));}
+function message(id,text,error=false){const el=$(id);el.textContent=text;el.classList.remove("hidden");el.classList.toggle("error",error);}
+function needConfig(){if(!sb){message("authMessage","Setup is not complete yet. Add your Supabase Project URL and publishable/anon key to this file before using login.",true);return true;}return false;}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function localGet(k){try{return JSON.parse(localStorage.getItem("td_"+k)||"[]")}catch{return []}}
+function localSet(k,v){localStorage.setItem("td_"+k,JSON.stringify(v))}
+let currentPage="overview";
+function render(){
+ const email=window.currentUser?.email||"Teacher";
+ $("topUser").textContent=email;
+ document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.page===currentPage));
+ const c=$("content");
+ const pages={
+ overview:`<div class="row"><div class="card"><p class="muted">Student records</p><div class="stat">${localGet("students").length}</div></div><div class="card"><p class="muted">Timetable entries</p><div class="stat">${localGet("timetable").length}</div></div><div class="card"><p class="muted">Saved resources</p><div class="stat">${localGet("resources").length}</div></div></div><div class="card" style="margin-top:16px"><h2>Welcome to your workspace</h2><p>Use the menu to organize student lists, timetable notes, resources, and quiz drafts.</p><div class="notice">This starter saves these draft records in this browser only. Cloud syncing and student result collection need the database setup next.</div></div>`,
+ quizzes:`<div class="card"><h2>Quizzes & Tests</h2><p class="muted">Create a quiz draft here. AI generation and shareable student tests will be connected in a later setup step.</p><label>Quiz title</label><input id="quizTitle" placeholder="e.g. Class 6 Computer Quiz"><label>Topic / instructions for AI</label><textarea id="quizTopic" rows="3" placeholder="Class, subject, topic, number of questions..."></textarea><button id="saveQuiz">Save quiz draft</button><div id="quizList"></div></div>`,
+ students:`<div class="card"><h2>Student Lists</h2><p class="muted">Add and organize student names. Do not enter sensitive student information in this prototype.</p><label>Class / Section</label><input id="studentClass" placeholder="e.g. Class 6A"><label>Student name</label><input id="studentName" placeholder="Full name"><button id="addStudent">Add student</button><div id="studentList"></div></div>`,
+ timetable:`<div class="card"><h2>Timetable</h2><label>Day</label><select id="ttDay"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option></select><label>Period / Time</label><input id="ttTime" placeholder="e.g. Period 2, 9:00 AM"><label>Class & subject</label><input id="ttSubject" placeholder="e.g. Class 7 - Computer"><button id="addTt">Add timetable entry</button><div id="ttList"></div></div>`,
+ resources:`<div class="card"><h2>Teaching Resources</h2><label>Resource title</label><input id="resTitle" placeholder="e.g. HTML worksheet"><label>Link or notes</label><textarea id="resLink" rows="3" placeholder="Paste a link or add a short note"></textarea><button id="addRes">Save resource</button><div id="resList"></div></div>`,
+ profile:`<div class="card"><h2>Profile & Menus</h2><p><strong>Signed in as:</strong> ${esc(window.currentUser?.email||"")}</p><p class="muted">Menu items are currently fixed in this starter. Editable menu names and profile details can be stored in Supabase in the next development step.</p><label>Dashboard display name</label><input id="displayName" placeholder="My Teacher Dashboard"><button id="saveDisplay">Save display name on this browser</button><div id="profileMessage" class="notice hidden"></div><hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h3>Setup status</h3><p class="muted small">Login uses Supabase after project credentials are added. Database-backed records, AI quiz generation, public test links, and automatic results are not active in this starter yet.</p></div>`
+ };
+ c.innerHTML=pages[currentPage]||pages.overview;
+ if(currentPage==="quizzes"){const a=localGet("quizzes");$("quizList").innerHTML=a.map(x=>`<div class="tile"><strong>${esc(x.title)}</strong>${esc(x.topic)}<div class="small muted">Draft only</div></div>`).join("");$("saveQuiz").onclick=()=>{if(!$("quizTitle").value.trim())return; a.push({title:$("quizTitle").value.trim(),topic:$("quizTopic").value.trim()});localSet("quizzes",a);render();};}
+ if(currentPage==="students"){const a=localGet("students");$("studentList").innerHTML=a.map(x=>`<div class="tile"><strong>${esc(x.name)}</strong>${esc(x.className)}</div>`).join("");$("addStudent").onclick=()=>{if(!$("studentName").value.trim()||!$("studentClass").value.trim())return;a.push({name:$("studentName").value.trim(),className:$("studentClass").value.trim()});localSet("students",a);render();};}
+ if(currentPage==="timetable"){const a=localGet("timetable");$("ttList").innerHTML=a.map(x=>`<div class="tile"><strong>${esc(x.day)} • ${esc(x.time)}</strong>${esc(x.subject)}</div>`).join("");$("addTt").onclick=()=>{if(!$("ttTime").value.trim()||!$("ttSubject").value.trim())return;a.push({day:$("ttDay").value,time:$("ttTime").value.trim(),subject:$("ttSubject").value.trim()});localSet("timetable",a);render();};}
+ if(currentPage==="resources"){const a=localGet("resources");$("resList").innerHTML=a.map(x=>`<div class="tile"><strong>${esc(x.title)}</strong>${esc(x.link)}</div>`).join("");$("addRes").onclick=()=>{if(!$("resTitle").value.trim())return;a.push({title:$("resTitle").value.trim(),link:$("resLink").value.trim()});localSet("resources",a);render();};}
+ if(currentPage==="profile"){$("displayName").value=localStorage.getItem("td_displayName")||"";$("saveDisplay").onclick=()=>{localStorage.setItem("td_displayName",$("displayName").value);message("profileMessage","Display name saved in this browser.");};}
+}
+document.querySelectorAll(".navbtn").forEach(b=>b.onclick=()=>{currentPage=b.dataset.page;render()});
+$("showSignup").onclick=()=>show("signupView");$("backLogin").onclick=()=>show("authView");$("showForgot").onclick=()=>show("forgotView");$("forgotBack").onclick=()=>show("authView");
+$("loginForm").onsubmit=async e=>{e.preventDefault();if(needConfig())return;const {data,error}=await sb.auth.signInWithPassword({email:$("loginEmail").value,password:$("loginPassword").value});if(error)message("authMessage",error.message,true);else enter(data.user);};
+$("signupForm").onsubmit=async e=>{e.preventDefault();if(needConfig())return;const {data,error}=await sb.auth.signUp({email:$("signupEmail").value,password:$("signupPassword").value,options:{data:{full_name:$("signupName").value},emailRedirectTo:location.origin+location.pathname}});if(error)message("signupMessage",error.message,true);else message("signupMessage",data.session?"Account created.":"Account created. Check your email to confirm signup.");};
+$("forgotForm").onsubmit=async e=>{e.preventDefault();if(needConfig())return;const {error}=await sb.auth.resetPasswordForEmail($("forgotEmail").value,{redirectTo:location.origin+location.pathname});if(error)message("forgotMessage",error.message,true);else message("forgotMessage","If the email is registered, a password-reset link has been sent. Check your inbox.");};
+$("resetForm").onsubmit=async e=>{e.preventDefault();if(needConfig())return;if($("newPassword").value!==$("confirmPassword").value){message("resetMessage","Passwords do not match.",true);return;}const {error}=await sb.auth.updateUser({password:$("newPassword").value});if(error)message("resetMessage",error.message,true);else{message("resetMessage","Password updated. You can now sign in.");setTimeout(()=>show("authView"),1500);}};
+$("logoutBtn").onclick=async()=>{if(sb)await sb.auth.signOut();window.currentUser=null;show("authView");};
+function enter(user){window.currentUser=user;currentPage="overview";show("appView");render();}
+if(location.hash.includes("type=recovery")||new URLSearchParams(location.search).get("type")==="recovery"){show("resetView");}
+if(sb){sb.auth.getSession().then(({data})=>{if(data.session)enter(data.session.user);});sb.auth.onAuthStateChange((event,session)=>{if(event==="PASSWORD_RECOVERY")show("resetView");});}
+</script>
+</body></html>
